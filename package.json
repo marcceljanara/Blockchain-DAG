@@ -1,0 +1,21 @@
+{
+  "name": "wallet-setup",
+  "version": "1.0.0",
+  "description": "",
+  "main": "create-mnemonic.js",
+  "dependencies": {
+    "@iota/sdk": "^1.1.5",
+    "@iota/wallet": "2.0.3-rc.1",
+    "bip39": "3.0.4",
+    "dotenv": "16.0.1",
+    "node-fetch": "2.6.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2",
+    "util": "^0.12.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "tryrex",
+  "license": "Apache-2.0"
+}

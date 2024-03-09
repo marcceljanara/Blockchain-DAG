@@ -1,0 +1,5 @@
+node_modules
+tryrex-database
+
+.env
+wallet.stronghold
