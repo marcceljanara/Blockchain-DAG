@@ -6,9 +6,13 @@
   "dependencies": {
     "@iota/sdk": "^1.1.5",
     "@iota/wallet": "2.0.3-rc.1",
+    "axios": "^1.6.7",
     "bip39": "3.0.4",
     "dotenv": "16.0.1",
+    "mime": "^4.0.1",
+    "nft.storage": "^7.1.1",
     "node-fetch": "2.6.7",
+    "puppeteer": "^22.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.2",
     "util": "^0.12.5"

@@ -17,7 +17,7 @@ async function run() {
     });
 
     // Pass password to manager
-    await manager.setStrongholdPassword("Excuse721");
+    await manager.setStrongholdPassword(password);
 
     // Get specific account from account manager
     const account = await manager.getAccount(accountName); // Always sync before getting the account balance

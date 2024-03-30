@@ -1,105 +1,86 @@
-// Libraries
-// const { utf8ToHex } = require("@iota/sdk");
 const { AccountManager } = require("@iota/wallet");
 const { TextEncoder } = require("util");
 const { MintNftParams, Wallet, utf8ToHex } = require("@iota/sdk");
+const { NFTStorage, File, Blob } = require('nft.storage');
+const fs = require('fs');
+const path = require('path');
 
-// async function uploadByPath(filePath) {
-//   try {
-//     console.log("\n");
-//     console.log(consoleColor, `Start local IPFS node for upload:`);
+require("dotenv").config();
 
-//     // Set up local IPFS node for upload
-//     let node;
-//     if (!node) {
-//       node = await IPFS.create({
-//         repo: `ipfs_node`,
-//       });
-//     }
-
-//     // Read file from path
-//     const file = fs.readFileSync(filePath);
-
-//     // Upload file to IPFS
-//     const fileAdded = await node.add(file);
-//     const contentIdentifier = fileAdded.path;
-
-//     console.log("\n");
-//     console.log(
-//       consoleColor,
-//       `Your file was uploaded to IPFS with the following Content Identifier (CID):`
-//     );
-//     console.log(contentIdentifier, "\n");
-
-//     console.log(consoleColor, `Check your file on IPFS:`);
-//     console.log(`https://ipfs.io/ipfs/${contentIdentifier}`, "\n");
-
-//     return contentIdentifier;
-//   } catch (error) {
-//     console.error("IPFS upload error", error);
-//   }
-// }
-
-// uploadByPath();
+async function uploadByPath(filePath) {
+  try {
+    const nftStorageToken = process.env.NFT_STORAGE_TOKEN;
+    const client = new NFTStorage({ token: nftStorageToken });
+    const content = await fs.promises.readFile(filePath); // Menggunakan filePath yang diberikan sebagai argumen
+    const someData = new Blob([content]);
+    const cid = await client.storeBlob(someData);
+    console.log("Uploaded file:", filePath, "with CID:", cid);
+    return cid;
+  } catch (error) {
+    console.error("IPFS upload error:", error);
+    throw error; // Dilemparkan kembali untuk ditangani di fungsi run()
+  }
+}
 
 async function run() {
   const password = process.env.SH_PASSWORD;
   const accountName = process.env.ACCOUNT_NAME;
+  const folderPath = './dataset'; // Ubah sesuai dengan path folder Anda
+
   try {
-    const ipfsCid =
-      "bafybeidy42if7qqrkkkxpyvxyveaf57tqeegojucmmi5m7lbwpdd5lci5q";
-
-    // Define NFT metadata
-    const metadataObject = {
-      standard: "IRC27",
-      type: "image/jpeg",
-      version: "v1.0",
-      name: "kafka manis",
-      uri: `https://bafybeidy42if7qqrkkkxpyvxyveaf57tqeegojucmmi5m7lbwpdd5lci5q.ipfs.w3s.link/`,
-    };
-
-    const metadataBytes = utf8ToHex(JSON.stringify(metadataObject));
-
-    if (!process.env.SH_PASSWORD) {
-      throw new Error(".env SH_PASSWORD is undefined, see .env.example");
-    }
-    if (!process.env.SH_PASSWORD) {
-      throw new Error(".env SH_PASSWORD is undefined, see .env.example");
-    }
+    // Mendapatkan daftar file dalam folder
+    const files = await fs.promises.readdir(folderPath);
 
     const wallet = new Wallet({
       storagePath: `./${accountName}-database`,
     });
 
     const account = await wallet.getAccount(accountName);
-
-    // We send from the first address in the account.
     const senderAddress = (await account.addresses())[0].address;
-
-    // We need to unlock stronghold.
     await wallet.setStrongholdPassword(password);
-    const params = {
-      sender: senderAddress,
-      metadata: metadataBytes,
-      tag: utf8ToHex("Nyoman Ganteng"),
-      issuer: senderAddress,
-      immutableMetadata: metadataBytes,
-    };
-    const prepared = await account.prepareMintNfts([params]);
 
-    let transaction = await prepared.send();
-    console.log(`Transaction sent: ${transaction.transactionId}`);
+    for (const file of files) {
+      // Membuat path lengkap untuk setiap file dalam folder
+      const filePath = await path.join(folderPath, file);
 
-    // Wait for transaction to get included
-    let blockId = await account.retryTransactionUntilIncluded(
-      transaction.transactionId
-    );
+      // Mengunggah file ke IPFS
+      const ipfsCid = await uploadByPath(filePath);
 
-    console.log(`Block included: ${process.env.EXPLORER_URL}/block/${blockId}`);
-    console.log("Minted NFT!");
+      // Membuat metadata untuk NFT
+      const metadataObject = {
+        standard: "IRC27",
+        type: "image/jpeg",
+        version: "v1.0",
+        name: file,
+        uri: `https://${ipfsCid}.ipfs.nftstorage.link/`,
+      };
+
+      const metadataBytes = utf8ToHex(JSON.stringify(metadataObject));
+
+      // Persiapan mint NFT
+      const params = {
+        sender: senderAddress,
+        metadata: metadataBytes,
+        tag: utf8ToHex("TEST NFT LRS"),
+        issuer: senderAddress,
+        immutableMetadata: metadataBytes,
+      };
+      const prepared = await account.prepareMintNfts([params]);
+
+      // Mengirim transaksi
+      const transaction = await prepared.send();
+      console.log(`Transaction sent for file ${file}: ${transaction.transactionId}`);
+
+      // Menunggu transaksi dimasukkan ke dalam blok
+      const blockId = await account.retryTransactionUntilIncluded(transaction.transactionId);
+      console.log(`Block included for file ${file}: ${process.env.EXPLORER_URL}/block/${blockId}`);
+    }
+
+    console.log("All files uploaded and NFTs minted!");
   } catch (error) {
-    console.log("Error: ", error);
+    console.error("Error:", error);
   }
   process.exit(0);
 }
+
 run();

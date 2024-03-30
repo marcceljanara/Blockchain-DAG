@@ -1,5 +1,16 @@
 node_modules
-tryrex-database
+Xyorami-database
 
 .env
 wallet.stronghold
+dataset
+img.png
+iota-sdk.log
+note.txt
+scrap.py
+scraping.js
+single.js
+test-api.js
+test-api.ts
+test-fetch.js
+test-redirect.js
