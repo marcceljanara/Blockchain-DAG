@@ -7,6 +7,7 @@ const path = require('path');
 const {AES} = require('crypto-js');
 const {nanoid} = require('nanoid');
 
+
 require("dotenv").config();
 
 async function uploadByPath(filePath) {
@@ -28,7 +29,7 @@ async function run() {
   const password = process.env.SH_PASSWORD;
   const accountName = process.env.ACCOUNT_NAME;
   const aesKey = process.env.AES_KEY;
-  const folderPath = './dataset'; // Ubah sesuai dengan path folder Anda
+  const folderPath = './dataset-sensor'; // Ubah sesuai dengan path folder Anda
 
   try {
     // Mendapatkan daftar file dalam folder
@@ -51,15 +52,15 @@ async function run() {
 
       // enkripsi uri
       const encryptedUri = AES.encrypt(`https://${ipfsCid}.ipfs.nftstorage.link/`, aesKey).toString();
+
       // Membuat metadata untuk NFT
       const metadataObject = {
         id : nanoid(10),
         standard: "IRC27",
-        type: "image/jpeg",
+        type: "text/csv",
         version: "v1.0",
         name: file,
         uri: encryptedUri,
-        
       };
 
       const metadataBytes = utf8ToHex(JSON.stringify(metadataObject));
