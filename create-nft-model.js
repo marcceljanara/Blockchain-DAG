@@ -1,27 +1,40 @@
-const { AccountManager } = require("@iota/wallet");
-const { TextEncoder } = require("util");
-const { MintNftParams, Wallet, utf8ToHex } = require("@iota/sdk");
-const { NFTStorage, File, Blob } = require('nft.storage');
+const { create } = require('ipfs-http-client');
 const fs = require('fs');
 const path = require('path');
-const {AES} = require('crypto-js');
-const {nanoid} = require('nanoid');
+const CID = require('cids');
+const { AccountManager } = require('@iota/wallet');
+const { utf8ToHex, Wallet, MintNftParams } = require('@iota/sdk');
+const { AES } = require('crypto-js');
+const { nanoid } = require('nanoid');
+require('dotenv').config();
 
+// Inisialisasi IPFS client
+const ipfs = create({ url: 'http://93.127.185.37:5001/' });
 
-require("dotenv").config();
-
-async function uploadByPath(filePath) {
+async function uploadFile(filePath) {
   try {
-    const nftStorageToken = process.env.NFT_STORAGE_TOKEN;
-    const client = new NFTStorage({ token: nftStorageToken });
-    const content = await fs.promises.readFile(filePath); // Menggunakan filePath yang diberikan sebagai argumen
-    const someData = new Blob([content]);
-    const cid = await client.storeBlob(someData);
-    console.log("Uploaded file:", filePath, "with CID:", cid);
-    return cid;
+    // Membaca file dari sistem file
+    const file = fs.readFileSync(filePath);
+
+    // Mengunggah file ke IPFS
+    const result = await ipfs.add(file);
+    const cidBase58 = result.path;
+
+    // Konversi CID dari base58 ke CID versi 1 jika perlu
+    const cid = new CID(cidBase58);
+    let cidV1;
+    if (cid.version === 0) {
+      cidV1 = cid.toV1();
+    } else {
+      cidV1 = cid;
+    }
+
+    // Konversi CID versi 1 ke base32
+    const cidBase32 = cidV1.toString('base32');
+    return cidBase32;
   } catch (error) {
-    console.error("IPFS upload error:", error);
-    throw error; // Dilemparkan kembali untuk ditangani di fungsi run()
+    console.error('Error mengunggah file ke IPFS:', error);
+    throw error;
   }
 }
 
@@ -29,7 +42,7 @@ async function run() {
   const password = process.env.SH_PASSWORD;
   const accountName = process.env.ACCOUNT_NAME;
   const aesKey = process.env.AES_KEY;
-  const folderPath = './dataset-sensor'; // Ubah sesuai dengan path folder Anda
+  const folderPath = path.resolve(__dirname, 'dataset-models');
 
   try {
     // Mendapatkan daftar file dalam folder
@@ -48,16 +61,16 @@ async function run() {
       const filePath = path.join(folderPath, file);
 
       // Mengunggah file ke IPFS
-      const ipfsCid = await uploadByPath(filePath);
+      const cidBase32 = await uploadFile(filePath);
 
-      // enkripsi uri
-      const encryptedUri = AES.encrypt(`https://${ipfsCid}.ipfs.nftstorage.link/`, aesKey).toString();
+      // Enkripsi URI
+      const encryptedUri = AES.encrypt(`https://ipfs.xsmartagrichain.com/ipfs/${cidBase32}`, aesKey).toString();
 
       // Membuat metadata untuk NFT
       const metadataObject = {
-        id : nanoid(10),
+        id: nanoid(10),
         standard: "IRC27",
-        type: "text/csv",
+        type: "application/x-hdf5",
         version: "v1.0",
         name: file,
         uri: encryptedUri,
@@ -82,6 +95,7 @@ async function run() {
       // Menunggu transaksi dimasukkan ke dalam blok
       const blockId = await account.retryTransactionUntilIncluded(transaction.transactionId);
       console.log(`Block included for file ${file}: ${process.env.EXPLORER_URL}/block/${blockId}`);
+      fs.unlinkSync(filePath);
     }
 
     console.log("All files uploaded and NFTs minted!");

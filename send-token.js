@@ -30,19 +30,21 @@ async function run() {
 
     // Replace with the address of your choice!
     const address =
-      "rms1qpszqzadsym6wpppd6z037dvlejmjuke7s24hm95s9fg9vpua7vluaw60xu";
-    const amount = BigInt(1);
+      "rms1qzf5a8sxn7j9avqm9j444vxncjcnete9nkezlvtva40l2s523y8esnll3z6";
+    const amount = BigInt(800000000);
 
-    const transaction = (await account.getBalance()).nfts[2];
+    const transaction = await account.send(amount, address, {
+      allowMicroAmount: true,
+    });
     console.log(transaction);
 
-    // console.log(`Transaction sent: ${transaction.transactionId}`);
+    console.log(`Transaction sent: ${transaction.transactionId}`);
 
-    // const blockId = await account.retryTransactionUntilIncluded(
-    //   transaction.transactionId
-    // );
+    const blockId = await account.retryTransactionUntilIncluded(
+      transaction.transactionId
+    );
 
-    // console.log(`Block sent: ${process.env.EXPLORER_URL}/block/${blockId}`);
+    console.log(`Block sent: ${process.env.EXPLORER_URL}/block/${blockId}`);
   } catch (error) {
     console.log("Error: ", error);
   }
