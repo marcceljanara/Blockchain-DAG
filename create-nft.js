@@ -50,7 +50,7 @@ async function mintNftAndDeleteFile(filePath, file, wallet, account, senderAddre
       standard: "IRC27",
       type: "image/jpeg",
       version: "v1.0",
-      name: `overripe-${file}`,
+      name: `ripe-${file}`,
       uri: encryptedUri,
     };
 
