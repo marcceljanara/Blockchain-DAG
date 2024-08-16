@@ -3,6 +3,5 @@ Marccel-JBC-database
 
 .env
 wallet.stronghold
-dataset
 dataset-models
 dataset-sensor
